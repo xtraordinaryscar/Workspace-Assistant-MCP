@@ -1,0 +1,4 @@
+__pycache__/
+notes/
+test_samples/
+*.pyc
