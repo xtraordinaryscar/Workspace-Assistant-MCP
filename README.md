@@ -1,8 +1,8 @@
 # workspace-assistant (MCP server)
 
-A small [Model Context Protocol](https://modelcontextprotocol.io) server, written in Python, that gives Claude twelve tools for working with a project folder: listing, searching and analyzing files, generating Markdown output, and saving notes.
+A small [Model Context Protocol](https://modelcontextprotocol.io) server, written in Python, that gives Claude twelve tools for working with a project folder: listing, searching, reading, editing and analyzing files, generating Markdown output, saving notes, and read-only git information.
 
-Built for a university course project using the official `mcp` Python SDK (version 1.x, FastMCP style). It serves MCP over **streamable HTTP** on `127.0.0.1` and is reached by claude.ai through a temporary tunnel.
+Built for a university course project using the official `mcp` Python SDK (version 1.x, FastMCP style). It serves MCP over **streamable HTTP** on `127.0.0.1`. claude.ai reaches it through a fixed **ngrok** address, and small watchdog scripts keep the server and tunnel running.
 
 ## What it does
 
@@ -28,24 +28,25 @@ mcp-server/
 ├── server.py          # the MCP server and all tools
 ├── requirements.txt   # Python dependency (mcp 1.x)
 ├── test_tools.py      # tests that call the tools directly (no Claude needed)
-├── .gitignore         # keeps notes/, caches and test files out of git
+├── run-server.bat     # keeps the server running (restarts it if it stops)
+├── run-tunnel.bat     # keeps the ngrok tunnel running (restarts it if it stops)
+├── start-all.bat      # starts both watchdogs
+├── check-status.bat   # checks that both addresses respond
+├── .gitignore         # keeps notes/, .trash/, logs/, caches and test files out of git
 └── README.md
 ```
 
-`notes/` is created the first time `write_note` (or a saved report) writes a file. The tests use a temporary folder and delete it afterwards, so they leave nothing in the project.
+`notes/` is created the first time `write_note` (or a saved report) writes a file. `.trash/` holds files removed by `delete_file`. `logs/` holds the watchdog output. The tests use a temporary folder and delete it afterwards.
 
-## Setup (Windows)
+## Setup (Windows), one time
 
 ### 1. Install Python
 
 1. Download Python 3.10 or newer from https://www.python.org/downloads/
 2. In the installer, tick **"Add python.exe to PATH"** before clicking Install.
-3. Open a new Command Prompt and check:
-   ```
-   python --version
-   ```
+3. Open a new Command Prompt and check: `python --version`
 
-### 2. Install the dependency
+### 2. Install the Python dependency
 
 ```
 cd "C:\Users\Carl Stephen\Desktop\claude-test\mcp-server"
@@ -60,48 +61,76 @@ pip install -r requirements.txt
 python test_tools.py
 ```
 
-You should see a list of PASS lines and `Result: N passed, 0 failed`. No network or setup is needed for this.
+You should see `Result: N passed, 0 failed`. No network or ngrok is needed for this.
 
-## Running it for claude.ai
+### 4. Install ngrok and add your authtoken
 
-claude.ai connects from Anthropic's cloud, so it can't reach `127.0.0.1` on your PC. You need two running programs: the server, and a tunnel that makes it reachable on the internet.
+1. Install ngrok:
+   ```
+   winget install ngrok.ngrok
+   ```
+   Close and reopen Command Prompt afterwards.
+2. Copy your authtoken from the ngrok dashboard (**Your Authtoken** page), then run:
+   ```
+   ngrok config add-authtoken <your-authtoken>
+   ```
 
-### 1. Start the server (window 1)
+The authtoken is stored in ngrok's own configuration. It is **not** stored in any file in this project.
 
-```
-cd "C:\Users\Carl Stephen\Desktop\claude-test\mcp-server"
-python server.py
-```
+### 5. Your fixed address
 
-Leave it open. It listens on `http://127.0.0.1:8000` by default. To use a different port, set `PORT` first with `set PORT=8001`.
-
-### 2. Start a tunnel (window 2)
-
-Install cloudflared once:
-
-```
-winget install --id Cloudflare.cloudflared
-```
-
-Then start the tunnel:
+The domain is set once, at the top of `run-tunnel.bat`:
 
 ```
-cloudflared tunnel --url http://127.0.0.1:8000
+set NGROK_DOMAIN=panhandle-spotless-handpick.ngrok-free.dev
 ```
 
-It prints an address such as `https://random-words.trycloudflare.com`. Quick Tunnel addresses change every time you restart the tunnel.
+Your claude.ai connector URL is that domain with `/mcp` added:
 
-### 3. Add the connector in claude.ai (once per tunnel address)
+```
+https://panhandle-spotless-handpick.ngrok-free.dev/mcp
+```
 
-1. Go to **Settings → Connectors**.
-2. Delete any old connector for this server.
-3. Click **Add custom connector**.
-4. Enter the tunnel address with `/mcp` added at the end, for example `https://random-words.trycloudflare.com/mcp`.
-5. Leave the OAuth Client ID and Client Secret fields **empty**, then save and connect.
+## Running it
 
-Menu names and supported options change. Check Anthropic's current documentation on custom connectors if the steps differ.
+### Start everything
 
-Keep both windows open while you use the connector. Stop the tunnel when you are finished.
+Double-click **`start-all.bat`**, or run it from Command Prompt. Two minimized windows open: one for the server and one for the tunnel. Their output goes to `logs\server.log` and `logs\tunnel.log`.
+
+Then run **`check-status.bat`**. Both lines should show `HTTP 406`. A `406` means the server answered; plain `curl` doesn't send the `Accept` header that MCP requires, so `406` is the expected reply. `000`, `502` or `503` means that part is down.
+
+### Stop everything
+
+Open Task Manager and end the two `cmd.exe` windows titled **workspace-assistant server** and **ngrok tunnel**, and end any `python.exe` and `ngrok.exe` processes that remain. Closing a watchdog window alone is not enough, because the watchdog keeps restarting the program.
+
+### Do not run start-all twice
+
+A second copy of the server fails with "port in use". Stop everything first, then start again.
+
+### Start automatically at login (Task Scheduler)
+
+1. Press **Win + R**, type `taskschd.msc`, and press Enter.
+2. In the right panel, click **Create Task...** (not "Create Basic Task").
+3. **General tab:** name it `workspace-assistant`. Choose **Run only when user is logged on**.
+4. **Triggers tab:** click **New...**, set **Begin the task** to **At log on**, and choose your user. Click OK.
+5. **Actions tab:** click **New...**, set **Program/script** to:
+   ```
+   C:\Users\Carl Stephen\Desktop\claude-test\mcp-server\start-all.bat
+   ```
+   Set **Start in** to `C:\Users\Carl Stephen\Desktop\claude-test\mcp-server`. Click OK.
+6. **Conditions tab:** if it's a laptop, uncheck **Start the task only if the computer is on AC power**.
+7. Click OK. Enter your Windows password if asked.
+
+The services now start each time you log in. They stop when you shut down, sleep or log out, so run `check-status.bat` after logging in.
+
+## Connecting claude.ai (once only)
+
+1. In claude.ai, open **Settings → Connectors**.
+2. Click **Add custom connector**.
+3. Enter the URL `https://panhandle-spotless-handpick.ngrok-free.dev/mcp`.
+4. Leave the OAuth Client ID and Client Secret fields **empty**, then save and connect.
+
+Because the address is fixed, you don't need to change the connector again. Menu names change, so check Anthropic's current documentation if the steps differ.
 
 ## Example prompts to try
 
@@ -130,10 +159,11 @@ Keep both windows open while you use the connector. Stop the tunnel when you are
 - Problems are returned to Claude as `Error: ...` messages instead of crashing the server.
 
 **Limitations**
-- **There is no login.** The server has no password or token. Anyone who has the tunnel address can call its tools while the tunnel is running. Keep the address private, and stop the tunnel when you are not demonstrating.
-- **`write_note` writes files** (and `generate_project_report` does when `save_as` is given). They can only be created in `notes/`, but anyone who can call the server can make them.
-- The server listens only on `127.0.0.1`, and a tunnel is what makes it reachable from outside.
-- The server rewrites the incoming `Host` header to `127.0.0.1` so that the MCP SDK accepts requests coming through the tunnel. This is why the connector works.
+- **There is no login.** The server has no password or token. Anyone who knows the ngrok address can call its tools while the tunnel is running, and `write_note`, `str_replace` and `delete_file` can change files in the project. Keep the address private, and stop the services when you are not using them.
+- The server listens only on `127.0.0.1`. ngrok is what makes it reachable from outside.
+- The server rewrites the incoming `Host` header to `127.0.0.1` so that the MCP SDK accepts requests coming through the tunnel.
+- The watchdogs only run while you are logged in, and they stop when the computer sleeps or shuts down.
+- The watchdogs restart a crashed program, but they don't fix a bug that crashes it every time. Check `logs\server.log` if the restarts keep happening.
 - Works only with UTF-8 text files up to about 1 MB (`.txt`, `.md`, `.py`, `.json`, `.csv`, `.log`, `.html`, `.css`, `.js`, `.yaml`, `.yml`, `.toml`, `.ini`). It cannot read Word, PDF or image files.
 - Keyword analysis is simple word counting with a basic English stop-word list; it does not understand meaning.
 - Reading time assumes 200 words per minute.
