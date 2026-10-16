@@ -19,11 +19,16 @@ sys.dont_write_bytecode = True   # don't leave a __pycache__ folder in the proje
 import server
 from server import (
     analyze_text_file,
+    delete_file,
     find_broken_links,
     find_todos,
     generate_markdown_toc,
     generate_project_report,
+    git_lite,
+    is_protected,
     list_project_files,
+    read_file,
+    str_replace,
     search_in_files,
     write_note,
 )
@@ -221,6 +226,58 @@ check("find_broken_links blocks '..'", "Access denied" in find_broken_links("..\
 # ---------------------------------------------------------------------------
 # Error handling and safety layer
 # ---------------------------------------------------------------------------
+
+# ---------------------------------------------------------------------------
+# New tools: read_file, str_replace, delete_file, git_lite
+# ---------------------------------------------------------------------------
+
+print("\n=== read_file ===")
+edit_dir = samples / "edit_check"
+edit_dir.mkdir(exist_ok=True)
+(edit_dir / "code.py").write_text("alpha = 1\nbeta = 2\ngamma = 3\n", encoding="utf-8")
+(edit_dir / "twice.txt").write_text("same line\nsame line\n", encoding="utf-8")
+(edit_dir / "delete_me.txt").write_text("bye\n", encoding="utf-8")
+
+result = read_file("test_samples/edit_check/code.py")
+show("read_file('test_samples/edit_check/code.py')", result)
+check("read_file shows line numbers", "2 | beta = 2" in result)
+check("read_file reports total lines", "of 3" in result)
+check("read_file range works", "3 | gamma = 3" in read_file("test_samples/edit_check/code.py", 3, 1))
+check("read_file says how to continue", "start_line=2" in read_file("test_samples/edit_check/code.py", 1, 1))
+check("read_file rejects a bad start_line", "Error" in read_file("test_samples/edit_check/code.py", 99))
+check("read_file blocks '..'", "Access denied" in read_file(".."))
+
+print("\n=== str_replace ===")
+result = str_replace("test_samples/edit_check/code.py", "beta = 2", "beta = 20")
+show("str_replace('beta = 2' -> 'beta = 20')", result)
+check("str_replace changes the text", "beta = 20" in (edit_dir / "code.py").read_text(encoding="utf-8"))
+check("str_replace reports the line number", "at line 2" in result)
+check("missing text is refused", "not found" in str_replace("test_samples/edit_check/code.py", "nothing here", "x"))
+check("repeated text is refused", "appears 2 times" in str_replace("test_samples/edit_check/twice.txt", "same line", "other"))
+check("repeated text is left unchanged", (edit_dir / "twice.txt").read_text(encoding="utf-8") == "same line\nsame line\n")
+check("empty old_str is refused", "Error" in str_replace("test_samples/edit_check/code.py", "", "x"))
+check("str_replace cannot create a file", "not found" in str_replace("test_samples/edit_check/new.txt", "a", "b"))
+check("str_replace blocks '..'", "Access denied" in str_replace("..\\hello.txt", "a", "b"))
+check("server.py is protected from edits", is_protected(Path(server.__file__)))
+
+print("\n=== delete_file ===")
+result = delete_file("test_samples/edit_check/delete_me.txt")
+show("delete_file('test_samples/edit_check/delete_me.txt')", result)
+check("file is no longer in its folder", not (edit_dir / "delete_me.txt").exists())
+trashed = list((ROOT / ".trash").glob("*_delete_me.txt"))
+check("file is kept in .trash", len(trashed) == 1)
+check("delete reports it is recoverable", "recoverable" in result)
+check("trash files are not deleted again", trashed and "already in .trash" in delete_file(f".trash/{trashed[0].name}"))
+check("missing file is refused", "not found" in delete_file("test_samples/edit_check/nope.txt"))
+check("folders cannot be deleted", "only files" in delete_file("test_samples/edit_check"))
+check("server.py is protected from delete", is_protected(Path(server.__file__)))
+check("delete blocks '..'", "Access denied" in delete_file("..\\hello.txt"))
+
+print("\n=== git_lite ===")
+check("unknown git command is refused", "must be one of" in git_lite("push"))
+result = git_lite("status")
+show("git_lite('status') in a folder that is not a repo", result)
+check("git_lite reports a non-repo cleanly", "Error" in result)
 
 print("\n=== errors and safety ===")
 check("missing file gives an error", "Error: File not found" in analyze_text_file("nope.txt"))

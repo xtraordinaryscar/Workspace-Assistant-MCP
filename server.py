@@ -5,15 +5,15 @@ for working with a project folder.
 Safety rules (enforced by safe_path below):
   * Every path is resolved relative to THIS folder (mcp-server).
   * Anything that ends up outside this folder is rejected (.., absolute paths, etc.).
-  * The only code that writes is save_new_file(), used by write_note and by
-    generate_project_report (when save_as is given). It creates NEW .md/.txt
-    files inside the notes/ folder and never overwrites. All other tools are
-    read-only.
-  * There is no tool that deletes anything.
+  * Writing is limited. save_new_file() creates NEW .md/.txt files in notes/
+    (used by write_note and by generate_project_report with save_as). str_replace
+    edits existing text files, but never server.py. delete_file moves a file into
+    .trash/ (recoverable), never erases it, and never touches server.py.
+  * git_lite runs only three fixed, read-only git commands (status, log, diff).
 
 Tools: list_project_files, analyze_text_file, search_in_files,
 generate_markdown_toc, generate_project_report, write_note, find_todos,
-find_broken_links.
+find_broken_links, read_file, str_replace, delete_file, git_lite.
 
 Run it with:  python server.py
 It serves MCP over streamable HTTP on 127.0.0.1 (port from the PORT environment
@@ -24,6 +24,7 @@ a temporary tunnel (for example Cloudflare Quick Tunnel) during a demo.
 import math
 import os
 import re
+import subprocess
 import sys
 from collections import Counter
 from datetime import datetime
@@ -565,6 +566,171 @@ def find_broken_links(path: str) -> str:
         lines = [f"Checked {checked} relative link(s) in {rel(file_path)}: {len(broken)} broken."]
         lines.extend(broken)
         return "\n".join(lines)
+    except (UserError, OSError) as e:
+        return f"Error: {e}"
+
+
+# ---------------------------------------------------------------------------
+# Tool 9: read a file with line numbers (read-only)
+# ---------------------------------------------------------------------------
+
+# The server's own code file. str_replace and delete_file refuse to touch it.
+PROTECTED_FILE = Path(__file__).resolve()
+
+
+def is_protected(file_path: Path) -> bool:
+    """True if this path is the server's own code file."""
+    return file_path.resolve() == PROTECTED_FILE
+
+
+@mcp.tool()
+def read_file(path: str, start_line: int = 1, max_lines: int = 200) -> str:
+    """Read a text file and return its lines with line numbers, so you can see the
+    exact code. Long files come back in parts: call again with start_line to continue.
+
+    Args:
+        path: Path to a text file, relative to the project root.
+        start_line: First line to return (1 is the top of the file).
+        max_lines: Most lines to return in one call (default 200, maximum 500).
+    """
+    try:
+        file_path, text = read_text_file(path)
+        lines = text.splitlines()
+        total = len(lines)
+        if total == 0:
+            return f"{rel(file_path)} is empty."
+        if start_line < 1 or start_line > total:
+            return f"Error: start_line must be between 1 and {total} for this file."
+
+        max_lines = max(1, min(max_lines, 500))
+        end = min(total, start_line + max_lines - 1)
+        width = len(str(end))
+
+        out = [f"{rel(file_path)} (lines {start_line}-{end} of {total}):"]
+        for number in range(start_line, end + 1):
+            out.append(f"{number:>{width}} | {lines[number - 1]}")
+        if end < total:
+            out.append(f"... more lines remain. Call read_file again with start_line={end + 1}.")
+        return "\n".join(out)
+    except (UserError, OSError) as e:
+        return f"Error: {e}"
+
+
+# ---------------------------------------------------------------------------
+# Tool 10: replace one exact piece of text in an existing file
+# ---------------------------------------------------------------------------
+
+@mcp.tool()
+def str_replace(path: str, old_str: str, new_str: str) -> str:
+    """Replace one exact piece of text in an existing text file. The old text must
+    appear exactly once, otherwise nothing is changed. It cannot create or delete
+    files, and it cannot edit the server's own code file.
+
+    Args:
+        path: Path to an existing text file, relative to the project root.
+        old_str: The exact text to find (copy it from read_file, including spaces).
+        new_str: The text to put in its place (can be empty to remove old_str).
+    """
+    try:
+        if not old_str:
+            return "Error: old_str is empty. Give the exact text to replace."
+        if is_protected(safe_path(path)):
+            return "Error: this file is protected and cannot be edited through this tool."
+
+        file_path, text = read_text_file(path)
+        count = text.count(old_str)
+        if count == 0:
+            return f"Error: old_str was not found in {rel(file_path)}. Nothing was changed."
+        if count > 1:
+            return (f"Error: old_str appears {count} times in {rel(file_path)}. "
+                    "Add more surrounding text so it matches exactly once. Nothing was changed.")
+
+        line_number = text[:text.index(old_str)].count("\n") + 1
+        file_path.write_text(text.replace(old_str, new_str, 1), encoding="utf-8")
+        return (f"Replaced 1 occurrence in {rel(file_path)} at line {line_number} "
+                f"({len(old_str)} characters replaced with {len(new_str)}).")
+    except (UserError, OSError) as e:
+        return f"Error: {e}"
+
+
+# ---------------------------------------------------------------------------
+# Tool 11: delete a file safely (it is moved into .trash/, never erased)
+# ---------------------------------------------------------------------------
+
+TRASH_DIR = ".trash"
+
+
+@mcp.tool()
+def delete_file(path: str) -> str:
+    """Delete a file by moving it into the .trash/ folder, so it can be recovered.
+    Nothing is permanently erased. Folders cannot be deleted, and the server's own
+    code file is protected.
+
+    Args:
+        path: Path to a file, relative to the project root.
+    """
+    try:
+        file_path = safe_path(path)
+        if is_protected(file_path):
+            return "Error: this file is protected and cannot be deleted through this tool."
+        if TRASH_DIR in file_path.relative_to(ROOT).parts:
+            return "Error: this file is already in .trash and cannot be deleted again."
+        if not file_path.exists():
+            return f"Error: file not found: {path}"
+        if not file_path.is_file():
+            return "Error: only files can be deleted, not folders."
+
+        trash = ROOT / TRASH_DIR
+        trash.mkdir(exist_ok=True)
+        stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+        destination = trash / f"{stamp}_{file_path.name}"
+        original = rel(file_path)
+        file_path.rename(destination)
+        return (f"Moved {original} to {rel(destination)}. "
+                "It is recoverable: move it back to restore it.")
+    except (UserError, OSError) as e:
+        return f"Error: {e}"
+
+
+# ---------------------------------------------------------------------------
+# Tool 12: read-only git information (git-lite)
+# ---------------------------------------------------------------------------
+
+# Only these fixed, read-only git commands can run. No shell is used, and the
+# command name is looked up in this table, so nothing else can be executed.
+GIT_COMMANDS = {
+    "status": ["git", "status", "--short"],
+    "log": ["git", "log", "--oneline", "-n", "10"],
+    "diff": ["git", "diff", "--stat"],
+}
+
+
+@mcp.tool()
+def git_lite(command: str = "status") -> str:
+    """Show read-only git information for the project: 'status' (changed files),
+    'log' (last 10 commits) or 'diff' (summary of uncommitted changes).
+    Nothing is ever changed.
+
+    Args:
+        command: One of "status", "log" or "diff". Default is "status".
+    """
+    try:
+        key = command.strip().lower()
+        if key not in GIT_COMMANDS:
+            return "Error: command must be one of: " + ", ".join(GIT_COMMANDS) + "."
+        result = subprocess.run(
+            GIT_COMMANDS[key], cwd=ROOT, capture_output=True, text=True, timeout=10
+        )
+        if result.returncode != 0:
+            return f"Error from git: {result.stderr.strip() or 'unknown error'}"
+        output = result.stdout.strip()
+        if not output:
+            return f"git {key}: nothing to show."
+        return f"git {key}:\n{output}"
+    except FileNotFoundError:
+        return "Error: git is not installed or not on PATH."
+    except subprocess.TimeoutExpired:
+        return "Error: git took too long to respond."
     except (UserError, OSError) as e:
         return f"Error: {e}"
 

@@ -1,6 +1,6 @@
 # workspace-assistant (MCP server)
 
-A small [Model Context Protocol](https://modelcontextprotocol.io) server, written in Python, that gives Claude eight tools for working with a project folder: listing, searching and analyzing files, generating Markdown output, and saving notes.
+A small [Model Context Protocol](https://modelcontextprotocol.io) server, written in Python, that gives Claude twelve tools for working with a project folder: listing, searching and analyzing files, generating Markdown output, and saving notes.
 
 Built for a university course project using the official `mcp` Python SDK (version 1.x, FastMCP style). It serves MCP over **streamable HTTP** on `127.0.0.1` and is reached by claude.ai through a temporary tunnel.
 
@@ -16,6 +16,10 @@ Built for a university course project using the official `mcp` Python SDK (versi
 | `write_note` | Creates a new `.md` or `.txt` file in `notes/` | Yes (new files only) |
 | `find_todos` | Lists `TODO`, `FIXME` and `NOTE` comments with file and line number | No |
 | `find_broken_links` | Reports relative links in a `.md` file that point to files that don't exist | No |
+| `read_file` | Returns a file's lines with line numbers, in parts for long files | No |
+| `str_replace` | Replaces one exact piece of text in an existing file (must match exactly once; never edits `server.py`) | Yes (existing files only) |
+| `delete_file` | Moves a file into `.trash/` so it can be recovered; never erases it; never touches `server.py` | Yes (moves to `.trash/`) |
+| `git_lite` | Runs only `git status`, `git log` or `git diff` and returns the output | No |
 
 ## Project structure
 
@@ -111,14 +115,18 @@ Keep both windows open while you use the connector. Stop the tunnel when you are
 - "Find all the TODO, FIXME and NOTE comments in the project."
 - "Check README.md for broken links."
 - Live demo: "Create a note called `demo.md` containing the line `TODO: write the tests` and a link `[missing](nope.md)`. Then find the TODOs, and check `notes/demo.md` for broken links."
+- "Read the first 40 lines of `server.py`."
+- "In `notes/demo.md`, replace `TODO: write the tests` with `DONE: tests written`."
+- "Show the last 10 git commits."
+- "Delete `notes/demo.md`." (It goes to `.trash/`, not permanently erased.)
 - Safety check: "Analyze `..\hello.txt`." (This should be refused.)
 
 ## Limitations and safety
 
 **Safety**
 - Every path goes through `safe_path()`, which resolves it and rejects anything outside the `mcp-server` folder. This blocks `..`, absolute paths such as `C:\Windows\...`, and symlinks that point outside.
-- The only code that writes is `save_new_file()`, used by `write_note` and by `generate_project_report` when `save_as` is given. It creates new `.md`/`.txt` files with plain names inside `notes/`, never overwrites, and never writes anywhere else. All other tools are read-only.
-- There is no tool that deletes, renames or moves files.
+- Writing is limited to these tools: `write_note` and `generate_project_report` (with `save_as`) create new files in `notes/`; `str_replace` edits existing text files; `delete_file` moves a file into `.trash/`. Nothing is permanently erased by the server, and `server.py` cannot be edited or deleted through these tools.
+- `git_lite` runs `git` with three fixed commands (`status`, `log`, `diff`). It does not use a shell and cannot run any other command.
 - Problems are returned to Claude as `Error: ...` messages instead of crashing the server.
 
 **Limitations**
@@ -132,4 +140,7 @@ Keep both windows open while you use the connector. Stop the tunnel when you are
 - Search is plain text matching (no regular expressions) and shows at most 50 matches.
 - `find_todos` matches only the uppercase words TODO, FIXME and NOTE, scans code files too (so it also lists those words inside `server.py`), and shows at most 50 results.
 - `find_broken_links` only checks that a link's target file or folder exists. It does not check `#anchors` inside other files, and it skips external links (`http`, `mailto`).
+- `str_replace` writes files with UTF-8 encoding, so a file that started with a byte-order mark may lose it.
+- `git_lite` needs `git` installed, and it only works inside a folder that is a Git repository. Run `git init` in `mcp-server` first.
+- The `.trash/` folder grows over time. Empty it by hand when you no longer need the files.
 - The boundary is only the `mcp-server` folder, so files elsewhere in `claude-test` are not reachable through this server.
