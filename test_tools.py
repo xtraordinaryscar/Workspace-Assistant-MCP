@@ -19,6 +19,8 @@ sys.dont_write_bytecode = True   # don't leave a __pycache__ folder in the proje
 import server
 from server import (
     analyze_text_file,
+    find_broken_links,
+    find_todos,
     generate_markdown_toc,
     generate_project_report,
     list_project_files,
@@ -155,6 +157,66 @@ result = write_note(note_name, "# Test note\n\nCreated by test_tools.py")
 show("write_note", result)
 check("note is created", "Note created" in result and (ROOT / "notes" / note_name).exists())
 check("note is not overwritten", "already exists" in write_note(note_name, "new text"))
+
+# ---------------------------------------------------------------------------
+# New tools: find_todos and find_broken_links
+# ---------------------------------------------------------------------------
+
+print("\n=== find_todos ===")
+todo_dir = samples / "todo_check"
+todo_dir.mkdir(exist_ok=True)
+(todo_dir / "code.py").write_text(
+    "x = 1  # TODO: add tests\n"
+    "y = 2\n"
+    "# FIXME crashes on empty input\n"
+    "# a lowercase note is ignored\n",
+    encoding="utf-8",
+)
+(todo_dir / "doc.md").write_text("NOTE: remember to rename\n", encoding="utf-8")
+clean_dir = samples / "clean_check"
+clean_dir.mkdir(exist_ok=True)
+(clean_dir / "clean.txt").write_text("nothing to see here\n", encoding="utf-8")
+
+result = find_todos("test_samples/todo_check")
+show("find_todos('test_samples/todo_check')", result)
+check("finds all 3 markers", "Found 3 marker(s)" in result)
+check("TODO has its line number and text", "code.py:1: [TODO] add tests" in result)
+check("FIXME has its line number and text", "code.py:3: [FIXME] crashes on empty input" in result)
+check("NOTE in a .md file is found", "doc.md:1: [NOTE] remember to rename" in result)
+check("lowercase 'note' is ignored", "code.py:4" not in result)
+check("clean folder reports no markers", "No TODO, FIXME or NOTE markers" in find_todos("test_samples/clean_check"))
+check("find_todos blocks '..'", "Access denied" in find_todos(".."))
+
+print("\n=== find_broken_links ===")
+links_dir = samples / "link_check"
+links_dir.mkdir(exist_ok=True)
+(links_dir / "exists.txt").write_text("I exist\n", encoding="utf-8")
+link_lines = [
+    "[good](exists.txt)",
+    "[missing](nope.md)",
+    "[web](https://example.com/page)",
+    "[email](mailto:someone@example.com)",
+    "[jump](#section)",
+    "[escape](../../../secret.md)",
+    "```",
+    "[in code](ignored-in-code.md)",
+    "```",
+]
+(links_dir / "page.md").write_text("\n".join(link_lines), encoding="utf-8")
+(links_dir / "clean.md").write_text("[good](exists.txt)\n", encoding="utf-8")
+
+result = find_broken_links("test_samples/link_check/page.md")
+show("find_broken_links('test_samples/link_check/page.md')", result)
+check("counts only the 3 relative links", "Checked 3 relative link(s)" in result)
+check("reports 2 broken links", "2 broken" in result)
+check("flags the missing file with its line", "line 2: nope.md" in result)
+check("flags a link that escapes the folder", "outside the allowed folder" in result)
+check("valid link is not flagged", "exists.txt" not in result)
+check("external, mailto and anchor links are skipped", "example.com" not in result and "#section" not in result)
+check("links inside code blocks are ignored", "ignored-in-code" not in result)
+check("file with only good links", "none are broken" in find_broken_links("test_samples/link_check/clean.md"))
+check("non-markdown file is rejected", "Error" in find_broken_links("test_samples/plain.txt"))
+check("find_broken_links blocks '..'", "Access denied" in find_broken_links("..\\hello.txt"))
 
 # ---------------------------------------------------------------------------
 # Error handling and safety layer

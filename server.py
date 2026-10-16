@@ -5,9 +5,15 @@ for working with a project folder.
 Safety rules (enforced by safe_path below):
   * Every path is resolved relative to THIS folder (mcp-server).
   * Anything that ends up outside this folder is rejected (.., absolute paths, etc.).
-  * Five tools are read-only. The only way to write is through save_new_file(),
-    which creates NEW .md/.txt files inside the notes/ folder and never overwrites.
+  * The only code that writes is save_new_file(), used by write_note and by
+    generate_project_report (when save_as is given). It creates NEW .md/.txt
+    files inside the notes/ folder and never overwrites. All other tools are
+    read-only.
   * There is no tool that deletes anything.
+
+Tools: list_project_files, analyze_text_file, search_in_files,
+generate_markdown_toc, generate_project_report, write_note, find_todos,
+find_broken_links.
 
 Run it with:  python server.py
 It serves MCP over streamable HTTP on 127.0.0.1 (port from the PORT environment
@@ -22,6 +28,7 @@ import sys
 from collections import Counter
 from datetime import datetime
 from pathlib import Path
+from urllib.parse import unquote
 
 import uvicorn
 from mcp.server.fastmcp import FastMCP
@@ -457,6 +464,107 @@ def write_note(filename: str, content: str) -> str:
     try:
         saved = save_new_file(filename, content, {".md", ".txt"})
         return f"Note created: {rel(saved)} ({len(content)} characters)."
+    except (UserError, OSError) as e:
+        return f"Error: {e}"
+
+
+# ---------------------------------------------------------------------------
+# Tool 7: find TODO / FIXME / NOTE markers (read-only)
+# ---------------------------------------------------------------------------
+
+TODO_PATTERN = re.compile(r"\b(TODO|FIXME|NOTE)\b[:\s-]*(.*)")   # uppercase markers only
+
+
+@mcp.tool()
+def find_todos(subfolder: str = ".") -> str:
+    """Find TODO, FIXME and NOTE markers (uppercase) in text files and list where they are.
+
+    Args:
+        subfolder: Folder to scan, relative to the project root. Default is the root.
+    """
+    try:
+        folder = safe_folder(subfolder)
+        found = []
+        files_scanned = 0
+
+        for p in collect_files(folder):
+            if p.suffix.lower() not in TEXT_EXTENSIONS or p.stat().st_size > MAX_READ_BYTES:
+                continue
+            try:
+                text = p.read_text(encoding="utf-8-sig")
+            except (UnicodeDecodeError, OSError):
+                continue  # skip files we can't read
+            files_scanned += 1
+            for number, line in enumerate(text.splitlines(), start=1):
+                match = TODO_PATTERN.search(line)
+                if match:
+                    found.append(f"{rel(p)}:{number}: [{match.group(1)}] {match.group(2).strip()[:100]}")
+
+        if not found:
+            return f"No TODO, FIXME or NOTE markers found (scanned {files_scanned} text file(s))."
+
+        lines = [f"Found {len(found)} marker(s) (scanned {files_scanned} text file(s)):"]
+        lines.extend(found[:MAX_MATCHES])
+        if len(found) > MAX_MATCHES:
+            lines.append(f"... and {len(found) - MAX_MATCHES} more (showing the first {MAX_MATCHES}).")
+        return "\n".join(lines)
+    except (UserError, OSError) as e:
+        return f"Error: {e}"
+
+
+# ---------------------------------------------------------------------------
+# Tool 8: find broken relative links in a Markdown file (read-only)
+# ---------------------------------------------------------------------------
+
+LINK_PATTERN = re.compile(r"\[[^\]]*\]\(([^)\s]+)[^)]*\)")   # [text](target "optional title")
+
+
+@mcp.tool()
+def find_broken_links(path: str) -> str:
+    """Check the relative links in a Markdown file and report any that point to
+    files or folders that don't exist. External links (http, mailto) and #anchors
+    are skipped, and anchors inside other files are not checked.
+
+    Args:
+        path: Path to a Markdown (.md) file, relative to the project root.
+    """
+    try:
+        file_path, text = read_text_file(path)
+        if file_path.suffix.lower() != ".md":
+            return "Error: this tool only works on Markdown (.md) files."
+
+        checked = 0
+        broken = []
+        in_code_block = False
+        for number, line in enumerate(text.splitlines(), start=1):
+            if line.strip().startswith("```"):
+                in_code_block = not in_code_block   # links inside code blocks are examples
+                continue
+            if in_code_block:
+                continue
+            for target in LINK_PATTERN.findall(line):
+                # Skip #anchors and external links such as http:, https:, mailto:
+                if target.startswith("#") or re.match(r"[a-zA-Z][a-zA-Z0-9+.-]+:", target):
+                    continue
+                link_path = unquote(target.split("#")[0].split("?")[0])
+                if not link_path:
+                    continue
+                checked += 1
+                try:
+                    full_path = safe_path(f"{rel(file_path.parent)}/{link_path}")
+                except UserError:
+                    broken.append(f"line {number}: {target} -> outside the allowed folder (not checked)")
+                    continue
+                if not full_path.exists():
+                    broken.append(f"line {number}: {target} -> not found")
+
+        if checked == 0:
+            return f"No relative links found in {rel(file_path)}."
+        if not broken:
+            return f"Checked {checked} relative link(s) in {rel(file_path)}: none are broken."
+        lines = [f"Checked {checked} relative link(s) in {rel(file_path)}: {len(broken)} broken."]
+        lines.extend(broken)
+        return "\n".join(lines)
     except (UserError, OSError) as e:
         return f"Error: {e}"
 

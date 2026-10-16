@@ -1,6 +1,6 @@
 # workspace-assistant (MCP server)
 
-A small [Model Context Protocol](https://modelcontextprotocol.io) server, written in Python, that gives Claude six tools for working with a project folder: listing, searching and analyzing files, generating Markdown output, and saving notes.
+A small [Model Context Protocol](https://modelcontextprotocol.io) server, written in Python, that gives Claude eight tools for working with a project folder: listing, searching and analyzing files, generating Markdown output, and saving notes.
 
 Built for a university course project using the official `mcp` Python SDK (version 1.x, FastMCP style). It serves MCP over **streamable HTTP** on `127.0.0.1` and is reached by claude.ai through a temporary tunnel.
 
@@ -14,6 +14,8 @@ Built for a university course project using the official `mcp` Python SDK (versi
 | `generate_markdown_toc` | Builds a Markdown table of contents from a `.md` file's headings | No |
 | `generate_project_report` | Markdown summary: counts by file type, total size, largest and newest files | Only if `save_as` is given |
 | `write_note` | Creates a new `.md` or `.txt` file in `notes/` | Yes (new files only) |
+| `find_todos` | Lists `TODO`, `FIXME` and `NOTE` comments with file and line number | No |
+| `find_broken_links` | Reports relative links in a `.md` file that point to files that don't exist | No |
 
 ## Project structure
 
@@ -106,13 +108,16 @@ Keep both windows open while you use the connector. Stop the tunnel when you are
 - "Generate a table of contents for `README.md`."
 - "Make a project report for the project folder."
 - "Create a note called `ideas.md` with three ideas for this project."
+- "Find all the TODO, FIXME and NOTE comments in the project."
+- "Check README.md for broken links."
+- Live demo: "Create a note called `demo.md` containing the line `TODO: write the tests` and a link `[missing](nope.md)`. Then find the TODOs, and check `notes/demo.md` for broken links."
 - Safety check: "Analyze `..\hello.txt`." (This should be refused.)
 
 ## Limitations and safety
 
 **Safety**
 - Every path goes through `safe_path()`, which resolves it and rejects anything outside the `mcp-server` folder. This blocks `..`, absolute paths such as `C:\Windows\...`, and symlinks that point outside.
-- Five tools are read-only. The only code that writes is `save_new_file()`, which creates new `.md`/`.txt` files with plain names inside `notes/`. It never overwrites and never writes anywhere else.
+- The only code that writes is `save_new_file()`, used by `write_note` and by `generate_project_report` when `save_as` is given. It creates new `.md`/`.txt` files with plain names inside `notes/`, never overwrites, and never writes anywhere else. All other tools are read-only.
 - There is no tool that deletes, renames or moves files.
 - Problems are returned to Claude as `Error: ...` messages instead of crashing the server.
 
@@ -125,4 +130,6 @@ Keep both windows open while you use the connector. Stop the tunnel when you are
 - Keyword analysis is simple word counting with a basic English stop-word list; it does not understand meaning.
 - Reading time assumes 200 words per minute.
 - Search is plain text matching (no regular expressions) and shows at most 50 matches.
+- `find_todos` matches only the uppercase words TODO, FIXME and NOTE, scans code files too (so it also lists those words inside `server.py`), and shows at most 50 results.
+- `find_broken_links` only checks that a link's target file or folder exists. It does not check `#anchors` inside other files, and it skips external links (`http`, `mailto`).
 - The boundary is only the `mcp-server` folder, so files elsewhere in `claude-test` are not reachable through this server.
