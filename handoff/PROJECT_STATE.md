@@ -26,9 +26,10 @@
 - Ngrok domain moved to the ignored local file `ngrok-domain.txt` (D-007)
 
 **Not done**
-- 5-minute live demo (the only remaining deliverable)
+- 5-minute live demo: not planned (the user decided not to run it; see CP-015)
 - Stretch goals (optional, not planned): `if_version` locking, `search_code`, repo map, token auth
 - Session A transcript (not saved; accepted by the user, see CP-012)
+- Raw session B transcript is not saved in raw form (the file in `handoff/transcripts/` is a summary); see CP-015
 
 ## Tools
 
@@ -61,9 +62,9 @@
 
 ## Next steps (in order)
 
-1. Commit the uncommitted handoff changes and `handoff/audit-session-a.md` (check `git status` first).
-2. Run the 5-minute live demo (see CP-013 for the checklist).
-3. After the demo, add a final checkpoint in CHECKPOINTS.md recording that it was done.
+1. Commit any uncommitted handoff changes (check `git status` first).
+2. Optional: if the user wants the raw session B transcript, copy it from claude.ai into `handoff/transcripts/`.
+3. Otherwise the project is complete; the live demo is not planned (CP-015).
 
 ## Known issues
 
@@ -76,8 +77,8 @@
 ## Last session
 
 - **Agent:** Claude, session 4
-- **Did:** confirmed the final state; moved the audit note into `handoff/`; updated the documentation PDF (title, name, handoff section, domain text); closed PLAN-003 (CP-013); updated this file to the final state.
-- **Resume from:** CP-013 in CHECKPOINTS.md. Only the live demo remains.
+- **Did:** confirmed the final state; moved the audit note into `handoff/`; updated the documentation PDF (title, name, handoff section, domain text); closed PLAN-003 (CP-013); recorded that the live demo will not happen (CP-015); saved the session C raw transcript; aligned the next steps with CP-015.
+- **Resume from:** CP-015 in CHECKPOINTS.md. The project is otherwise complete.
 
 ---
 
