@@ -37,4 +37,10 @@ Append only. Newest entries go above the marker line. Each entry: ID, date, agen
   3. Keep the report short and factual.
 - **Status:** Planned, not started
 
+## PLAN-002 update: session A blocked (2026-10-17, Claude, session 1)
+- **Status:** Blocked. Not started.
+- **Reason:** The demo must run through the `workspace-assistant` connector (requirement 05: real MCP client). In this chat the filesystem tools are available, but the workspace-assistant tools are not in the tool list.
+- **Not done:** no audit was run and no notes were written. Running the same audit with the filesystem tools would not satisfy requirement 05.
+- **Next:** open the workspace-assistant connector in claude.ai (Settings > Connectors) and confirm it is enabled for this chat; make sure the server and ngrok tunnel are running (`start-all.bat`, then `check-status.bat`). Start a new chat and use the connector's tools for session A.
+
 <!-- APPEND NEW ENTRIES ABOVE THIS LINE -->
