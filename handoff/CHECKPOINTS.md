@@ -152,5 +152,13 @@ Append only. Newest entries go above the marker line. Each checkpoint: ID, date,
 - **Not done in this checkpoint:** the raw transcript (must be copied from claude.ai by the user); the live demo; the ngrok domain change (user decision).
 - **Resume from:** the live demo.
 
+## CP-015: live demo will not happen
+- **Date:** 2026-10-17
+- **Agent:** Claude, session 4
+- **State:** the user decided the 5-minute live demo will not be run. `handoff/demo-script.md` was added as a reference for the prompts and checks, but no demo was recorded.
+- **Evidence still available:** the connector check results (6 of 7 checks passed; step 1 failed with a temporary tool-unavailable error; the path-boundary check was refused as expected), the second-session transcript in `handoff/transcripts/`, and the handoff logs.
+- **Known gap:** the rubric lists a 5-minute live demo as evidence, so this is unmet. The raw session B transcript is still not saved in raw form.
+- **Resume from:** project is otherwise complete; the open items are the raw transcript and the user's choice about the demo substitute.
+
 <!-- APPEND NEW ENTRIES ABOVE THIS LINE -->
 
