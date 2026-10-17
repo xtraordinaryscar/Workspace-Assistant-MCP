@@ -129,5 +129,21 @@ Append only. Newest entries go above the marker line. Each checkpoint: ID, date,
 - **Not verified:** the commit that contains the move (not yet made).
 - **Resume from:** the live demo (5 minutes) is the only remaining deliverable. Commit the move with the next commit.
 
+## CP-013: PLAN-003 closed; project ready for the live demo
+- **Date:** 2026-10-17
+- **Agent:** Claude, session 4
+- **State:**
+  - PLAN-003 complete. The documentation PDF is updated (title, name and course line, handoff section, domain text, Times font, no footer text) and is submitted separately, not in the repo. The README handoff section is committed.
+  - All requirements in the brief are met, except the live demo.
+  - The repo's latest commit on `main` is `de17e89` (handoff audit note and state updates). Only handoff state files were changed after that; PROJECT_STATE was updated in session 4 and is not yet committed.
+- **Demo checklist:**
+  1. Run `start-all.bat`, then `check-status.bat`. Both lines should show HTTP 406.
+  2. Confirm "Lazaro's MCP" is enabled in claude.ai.
+  3. Run the short flow: create a note, find the TODOs, check the broken link, then show a refused path such as `..\hello.txt`.
+  4. Show the handoff files and `handoff/audit-session-a.md` to show how the project resumes.
+- **Verified:** the handoff folder, the transcript, and the audit note are present on disk; the reflog shows the latest commit.
+- **Not verified:** the demo itself (not yet run); `git status` after the PROJECT_STATE edit.
+- **Resume from:** the live demo. After it, add a final checkpoint recording the outcome.
+
 <!-- APPEND NEW ENTRIES ABOVE THIS LINE -->
 

@@ -4,7 +4,7 @@
 
 **Project:** workspace-assistant, an MCP file-server connector (Python, `mcp` SDK, streamable HTTP)
 **Root:** `mcp-server/` (the sandbox; the tools cannot reach anything outside it)
-**Last updated:** 2026-10-17 by Claude (session 3)
+**Last updated:** 2026-10-17 by Claude (session 4)
 **Branch and commit at last update:** `handoff-protocol` @ 6c14a42 ("added handoff files"), plus later uncommitted handoff edits (CP-004 to CP-009, PLAN_LOG updates, `notes/audit-session-a.md`, `handoff/transcripts/`). Check `git status`.
 
 ## Current status
@@ -22,13 +22,13 @@
 - Append method verified (CP-004, corrected in CP-005)
 - PLAN-002 complete (CP-006 to CP-009): session A audit (`handoff/audit-session-a.md`, moved from `notes/` so git tracks it), session B re-check and transcript (`handoff/transcripts/plan-002-session-b-tool-calls.md`). Session B resumed from the handoff files with no questions to the user.
 - Protocol fixes for the findings in CP-009
+- PLAN-003 complete: documentation PDF (report, design choices, handoff section; submitted separately, not in the repo) and README handoff section (CP-013)
+- Ngrok domain moved to the ignored local file `ngrok-domain.txt` (D-007)
 
-**Not done (requirements for the midterm brief)**
-- Tool-call transcript of session A (not saved; only session B's is in `handoff/transcripts/`)
-- Short report on stack, tool design choices, and security tradeoffs (PLAN-003)
-- README section describing the handoff protocol (PLAN-003)
-- 5-minute live demo
-- Stretch goals (optional): `if_version` locking, `search_code`, repo map, token auth
+**Not done**
+- 5-minute live demo (the only remaining deliverable)
+- Stretch goals (optional, not planned): `if_version` locking, `search_code`, repo map, token auth
+- Session A transcript (not saved; accepted by the user, see CP-012)
 
 ## Tools
 
@@ -62,11 +62,8 @@
 ## Next steps (in order)
 
 1. Commit the uncommitted handoff changes and `handoff/audit-session-a.md` (check `git status` first).
-2. PLAN-003: write the report (stack, tool design choices, security tradeoffs) and the README handoff section.
-3. Save the tool-call transcript of session A if it is available; otherwise note in PLAN-002 that it was not saved.
-4. Run `python test_tools.py` and record the result in CHECKPOINTS.md.
-5. Decide whether to merge `handoff-protocol` into `main` once the report is done.
-6. Prepare the 5-minute live demo.
+2. Run the 5-minute live demo (see CP-013 for the checklist).
+3. After the demo, add a final checkpoint in CHECKPOINTS.md recording that it was done.
 
 ## Known issues
 
@@ -78,9 +75,9 @@
 
 ## Last session
 
-- **Agent:** Claude, session 3
-- **Did:** verified session B's audit result; saved the transcript; recorded PLAN-002 complete; recorded protocol findings (CP-009); updated this file with the protocol fixes.
-- **Resume from:** CP-009 in CHECKPOINTS.md, then PLAN-003.
+- **Agent:** Claude, session 4
+- **Did:** confirmed the final state; moved the audit note into `handoff/`; updated the documentation PDF (title, name, handoff section, domain text); closed PLAN-003 (CP-013); updated this file to the final state.
+- **Resume from:** CP-013 in CHECKPOINTS.md. Only the live demo remains.
 
 ---
 
