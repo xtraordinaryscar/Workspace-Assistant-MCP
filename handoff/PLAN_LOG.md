@@ -62,5 +62,25 @@ Append only. Newest entries go above the marker line. Each entry: ID, date, agen
 - **Findings:** recorded in CP-009 (protocol deviation: `edit_file` not available in session B, `str_replace` used without asking; gap: no rule for a missing transcript folder).
 - **Next:** PLAN-003 (report and README handoff section), after the protocol fixes in CP-009.
 
+## PLAN-003 (started, 2026-10-17, Claude, session 3)
+- **Goal:** satisfy requirement 06 (short report on stack, tool design choices, security tradeoffs) and the README handoff section.
+- **Steps:**
+  1. Confirm the report format with the user (update the existing documentation PDF, or write a separate report).
+  2. Draft the report sections: stack, tool design choices (soft delete, new-file-only writes, git_lite limits, `server.py` protection), security tradeoffs (no authentication, public tunnel, write tools), and test results (79 passed, 0 failed, reported by the user, CP-011).
+  3. Add a short handoff section to README.md.
+  4. Run a final `git status` check and commit.
+- **Status:** in progress (step 1 pending)
+
+## PLAN-003 update (2026-10-17, Claude, session 3)
+- **Step 1 (format):** user chose to update the existing documentation PDF.
+- **Step 2 (report content):** done in `workspace-assistant-documentation.pdf` (3 pages): test result 79 passed / 0 failed added to Testing (reported by the user, not re-run by the agent); new section 7 "Design Choices and Tradeoffs"; Limitations renumbered to 8, Future Work to 9.
+- **Remaining:** step 3 (README handoff section) and step 4 (git status, commit). The PDF is in `/mnt/user-data/outputs/` and is not in the repo.
+- **Status:** in progress
+
+## PLAN-003 update (2026-10-17, Claude, session 3)
+- **Step 3 (README):** done. Added `handoff/` to the project structure tree, and a "Handoff protocol" section at the end of `README.md` (files, start and end of session, rules, tool note, why it works).
+- **Remaining:** step 4 (`git status` and commit), then decide on the merge to `main`.
+- **Status:** in progress (steps 1-3 done)
+
 <!-- APPEND NEW ENTRIES ABOVE THIS LINE -->
 

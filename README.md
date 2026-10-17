@@ -32,6 +32,7 @@ mcp-server/
 ├── run-tunnel.bat     # keeps the ngrok tunnel running (restarts it if it stops)
 ├── start-all.bat      # starts both watchdogs
 ├── check-status.bat   # checks that both addresses respond
+├── handoff/           # session handoff files (see "Handoff protocol" below)
 ├── .gitignore         # keeps notes/, .trash/, logs/, caches and test files out of git
 └── README.md
 ```
@@ -174,3 +175,44 @@ Because the address is fixed, you don't need to change the connector again. Menu
 - `git_lite` needs `git` installed, and it only works inside a folder that is a Git repository. Run `git init` in `mcp-server` first.
 - The `.trash/` folder grows over time. Empty it by hand when you no longer need the files.
 - The boundary is only the `mcp-server` folder, so files elsewhere in `claude-test` are not reachable through this server.
+
+## Handoff protocol
+
+Long projects often span several chat sessions, and sometimes several AI agents. The `handoff/` folder keeps the work continuous, so a new session can resume without the user re-explaining anything.
+
+| File | Purpose | How it changes |
+|---|---|---|
+| `PROJECT_STATE.md` | Current status, constraints, next steps | Rewritten in place |
+| `PLAN_LOG.md` | What was planned and what happened | Append only |
+| `CHECKPOINTS.md` | Snapshots to resume from | Append only |
+| `DECISIONS.md` | Why choices were made | Append only (status changes, never deleted) |
+| `transcripts/` | Saved tool-call transcripts of demo sessions | Added as needed |
+
+### Starting a session
+
+1. Read `handoff/PROJECT_STATE.md`.
+2. Read the latest entries of `CHECKPOINTS.md` and `PLAN_LOG.md`.
+3. Check `DECISIONS.md` before changing anything that has a recorded decision.
+4. Check `git status` to see uncommitted changes.
+
+### Ending a session
+
+1. Update the status, next steps and known issues in `PROJECT_STATE.md`.
+2. Update the plan status in `PLAN_LOG.md`.
+3. Add a checkpoint in `CHECKPOINTS.md` with a clear **Resume from** note.
+
+### Rules
+
+- Never delete or rewrite earlier log entries. Correct a mistake with a new entry that refers to the old one by ID.
+- IDs increase by one and are never reused (`PLAN-001`, `CP-001`, `D-001`).
+- Every entry has a date (YYYY-MM-DD) and the name of the agent that wrote it.
+- Record what was verified and how. Do not record what was expected.
+- Keep secrets (authtokens, passwords) out of every handoff file.
+
+### Tool note
+
+Appends are made with the tool available in that environment. In Claude Desktop this is the filesystem server's `edit_file`. In claude.ai the custom connector's `str_replace` is used on the marker line `<!-- APPEND NEW ENTRIES ABOVE THIS LINE -->`. If the required tool is missing, the agent must tell the user before using a different tool.
+
+### Why this works
+
+The handoff files are the only memory that carries from one session to the next. A session that needs something the files don't contain should record it as a gap, not guess. The project's midterm test was a two-session audit: the second session resumed from the files and finished the work without asking the user any questions.

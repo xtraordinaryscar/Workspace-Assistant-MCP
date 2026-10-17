@@ -102,5 +102,20 @@ Append only. Newest entries go above the marker line. Each checkpoint: ID, date,
 - **Not verified:** whether `str_replace` on the connector produced the same diff format as `edit_file` (the agent reports the result looked right).
 - **Resume from:** PLAN-003 (report and README handoff section).
 
+## CP-010: test_tools.py run reported as all passed
+- **Date:** 2026-10-17
+- **Agent:** Claude, session 3
+- **State:** the user ran `python test_tools.py` and reported that all checks passed with no failures.
+- **Verified:** not verified by the agent. The agent did not see the output. The total number of checks was not reported.
+- **Action:** ask the user for the final PASS count line (and the PASS/FAIL lines if they want them in the report) before quoting numbers in PLAN-003.
+- **Resume from:** PLAN-003 (report and README handoff section).
+
+## CP-011: test_tools.py result confirmed by user: 79 passed, 0 failed
+- **Date:** 2026-10-17
+- **Agent:** Claude, session 3
+- **State:** the user reported the final line of `python test_tools.py`: `79 passed, 0 failed`. The agent did not see the full output.
+- **Verified:** not verified by the agent; the count is the user's report.
+- **Resume from:** PLAN-003 (report and README handoff section). Use 79 passed / 0 failed in the report, and say the run was reported by the user.
+
 <!-- APPEND NEW ENTRIES ABOVE THIS LINE -->
 
