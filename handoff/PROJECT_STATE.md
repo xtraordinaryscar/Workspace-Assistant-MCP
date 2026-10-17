@@ -20,7 +20,7 @@
 **Done**
 - Handoff protocol created in `handoff/` and committed (CP-003)
 - Append method verified (CP-004, corrected in CP-005)
-- PLAN-002 complete (CP-006 to CP-009): session A audit (`notes/audit-session-a.md`), session B re-check and transcript (`handoff/transcripts/plan-002-session-b-tool-calls.md`). Session B resumed from the handoff files with no questions to the user.
+- PLAN-002 complete (CP-006 to CP-009): session A audit (`handoff/audit-session-a.md`, moved from `notes/` so git tracks it), session B re-check and transcript (`handoff/transcripts/plan-002-session-b-tool-calls.md`). Session B resumed from the handoff files with no questions to the user.
 - Protocol fixes for the findings in CP-009
 
 **Not done (requirements for the midterm brief)**
@@ -61,7 +61,7 @@
 
 ## Next steps (in order)
 
-1. Commit the uncommitted handoff changes and `notes/audit-session-a.md` (check `git status` first).
+1. Commit the uncommitted handoff changes and `handoff/audit-session-a.md` (check `git status` first).
 2. PLAN-003: write the report (stack, tool design choices, security tradeoffs) and the README handoff section.
 3. Save the tool-call transcript of session A if it is available; otherwise note in PLAN-002 that it was not saved.
 4. Run `python test_tools.py` and record the result in CHECKPOINTS.md.

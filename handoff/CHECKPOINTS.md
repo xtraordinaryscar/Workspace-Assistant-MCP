@@ -117,5 +117,17 @@ Append only. Newest entries go above the marker line. Each checkpoint: ID, date,
 - **Verified:** not verified by the agent; the count is the user's report.
 - **Resume from:** PLAN-003 (report and README handoff section). Use 79 passed / 0 failed in the report, and say the run was reported by the user.
 
+## CP-012: audit note moved to handoff/; user confirmations
+- **Date:** 2026-10-17
+- **Agent:** Claude, session 3
+- **State:**
+  - `notes/audit-session-a.md` moved to `handoff/audit-session-a.md`. The `notes/` folder is git-ignored, so the file was not tracked there.
+  - PROJECT_STATE.md references updated to the new path. Older log entries (CP-006 to CP-008, PLAN-002) still name the old path; that is historical and is not rewritten.
+  - User confirmed: `ngrok-domain.txt` is not in `git status`; the handoff-protocol work is merged into `main`.
+  - User chose not to act on: the domain in earlier commits (D-007); session A's transcript.
+- **Verified:** `handoff/audit-session-a.md` exists after the move (move_file reported success).
+- **Not verified:** the commit that contains the move (not yet made).
+- **Resume from:** the live demo (5 minutes) is the only remaining deliverable. Commit the move with the next commit.
+
 <!-- APPEND NEW ENTRIES ABOVE THIS LINE -->
 
