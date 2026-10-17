@@ -6,7 +6,14 @@ REM (ngrok config add-authtoken <token>). The token is NOT stored in this file.
 cd /d "%~dp0"
 if not exist logs mkdir logs
 
-set NGROK_DOMAIN=panhandle-spotless-handpick.ngrok-free.dev
+REM The domain is read from ngrok-domain.txt (not tracked by git). Create that file
+REM with your domain on one line, for example: your-name.ngrok-free.dev
+if not exist ngrok-domain.txt (
+  echo ngrok-domain.txt is missing. Create it with your ngrok domain on one line.
+  pause
+  exit /b 1
+)
+set /p NGROK_DOMAIN=<ngrok-domain.txt
 
 :loop
 echo [%date% %time%] Starting tunnel on %NGROK_DOMAIN% >> logs\tunnel.log

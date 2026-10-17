@@ -3,4 +3,5 @@ notes/
 test_samples/
 .trash/
 logs/
+ngrok-domain.txt
 *.pyc

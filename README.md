@@ -80,16 +80,18 @@ The authtoken is stored in ngrok's own configuration. It is **not** stored in an
 
 ### 5. Your fixed address
 
-The domain is set once, at the top of `run-tunnel.bat`:
+The domain is stored in a local file named `ngrok-domain.txt`, which git ignores, so it is not committed. Create it in the `mcp-server` folder with your domain on one line:
 
 ```
-set NGROK_DOMAIN=panhandle-spotless-handpick.ngrok-free.dev
+your-name.ngrok-free.dev
 ```
+
+The scripts `run-tunnel.bat` and `check-status.bat` read the domain from that file. If it is missing, they stop and say so.
 
 Your claude.ai connector URL is that domain with `/mcp` added:
 
 ```
-https://panhandle-spotless-handpick.ngrok-free.dev/mcp
+https://<your-ngrok-domain>/mcp
 ```
 
 ## Running it
@@ -128,7 +130,7 @@ The services now start each time you log in. They stop when you shut down, sleep
 
 1. In claude.ai, open **Settings → Connectors**.
 2. Click **Add custom connector**.
-3. Enter the URL `https://panhandle-spotless-handpick.ngrok-free.dev/mcp`.
+3. Enter the URL `https://<your-ngrok-domain>/mcp`.
 4. Leave the OAuth Client ID and Client Secret fields **empty**, then save and connect.
 
 Because the address is fixed, you don't need to change the connector again. Menu names change, so check Anthropic's current documentation if the steps differ.

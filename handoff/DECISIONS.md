@@ -54,4 +54,12 @@ Status values: **Accepted**, **Superseded by D-XXX**, **Revisit**.
 - **Decision:** `str_replace` and `delete_file` refuse to touch `server.py`.
 - **Consequences:** The server must be edited by the user directly.
 
+## D-007: Keep the ngrok domain out of tracked files
+- **Date:** 2026-10-17
+- **Agent:** Claude, session 3
+- **Status:** Accepted
+- **Context:** The repository is public, and the ngrok domain was in `run-tunnel.bat`, `check-status.bat` and `README.md`. The server has no login, so the domain makes the server easier to find and use.
+- **Decision:** The domain is read from `ngrok-domain.txt`, which is listed in `.gitignore`. The tracked files show a placeholder.
+- **Consequences:** The domain is still in earlier commits, so this change does not remove it from history. Removing it would need a new reserved ngrok domain, or a rewrite of git history, which the user has not chosen. The local `ngrok-domain.txt` must be created on each machine that runs the scripts.
+
 <!-- APPEND NEW ENTRIES ABOVE THIS LINE -->
