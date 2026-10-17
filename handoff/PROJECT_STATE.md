@@ -4,8 +4,8 @@
 
 **Project:** workspace-assistant, an MCP file-server connector (Python, `mcp` SDK, streamable HTTP)
 **Root:** `mcp-server/` (the sandbox; the tools cannot reach anything outside it)
-**Last updated:** 2026-10-17 by Claude (session 1)
-**Branch and commit at last update:** `handoff-protocol` @ 6c14a42 ("added handoff files"), one commit ahead of `main` @ 8562201. Handoff files are committed; the protocol's append method was corrected after the commit (see CP-004, not yet committed).
+**Last updated:** 2026-10-17 by Claude (session 3)
+**Branch and commit at last update:** `handoff-protocol` @ 6c14a42 ("added handoff files"), plus later uncommitted handoff edits (CP-004 to CP-009, PLAN_LOG updates, `notes/audit-session-a.md`, `handoff/transcripts/`). Check `git status`.
 
 ## Current status
 
@@ -13,21 +13,21 @@
 - 12 tools in `server.py`, all paths resolved through `safe_path()`
 - Tests in `test_tools.py` (last recorded run result: none; see Known issues)
 - Server on `127.0.0.1:8000`, public HTTPS through an ngrok fixed domain (set at the top of `run-tunnel.bat`)
-- Process management: `run-server.bat` and `run-tunnel.bat` restart on crash, `start-all.bat` launches both, `check-status.bat` checks both (HTTP 406 from each address means it is up)
-- Connected to Claude Desktop through the public address; `notes/test-note.md` shows a successful write from a real client
-- Handoff append method tested and working with the filesystem `edit_file` tool (CP-004)
+- Process management: `run-server.bat` and `run-tunnel.bat` restart on crash, `start-all.bat` launches both, `check-status.bat` checks both (HTTP 406 from each address means it is up; HTTP 000 locally means the server is down, HTTP 502 publicly means the tunnel is up but the server is not)
+- Connected to Claude Desktop, and to claude.ai as the custom connector "Lazaro's MCP" (the user's own server; the name is the user's choice)
+- `notes/test-note.md` shows a successful write from a real client
 
 **Done**
 - Handoff protocol created in `handoff/` and committed (CP-003)
-- Append method verified (CP-004)
+- Append method verified (CP-004, corrected in CP-005)
+- PLAN-002 complete (CP-006 to CP-009): session A audit (`notes/audit-session-a.md`), session B re-check and transcript (`handoff/transcripts/plan-002-session-b-tool-calls.md`). Session B resumed from the handoff files with no questions to the user.
+- Protocol fixes for the findings in CP-009
 
 **Not done (requirements for the midterm brief)**
-- Multi-step demo task across 2 or more sessions with a real MCP client (PLAN-002)
-- Tool-call transcript of the demo task
-- Handoff protocol verified in use: the files exist, but no session has resumed from them yet
+- Tool-call transcript of session A (not saved; only session B's is in `handoff/transcripts/`)
 - Short report on stack, tool design choices, and security tradeoffs (PLAN-003)
+- README section describing the handoff protocol (PLAN-003)
 - 5-minute live demo
-- README section describing the handoff protocol
 - Stretch goals (optional): `if_version` locking, `search_code`, repo map, token auth
 
 ## Tools
@@ -57,29 +57,30 @@
 5. Branch `process-manager` was merged into `main` (the reflog shows `main` fast-forwarded to 8562201).
 6. `handoff-protocol` branch created from `main`, then fast-forwarded to 8562201 with `pull origin main`.
 7. Commit "added handoff files" on `handoff-protocol` (6c14a42), made by the user.
+8. Later handoff commits by the user (protocol fix, PLAN_LOG block note).
 
 ## Next steps (in order)
 
-1. Delete the scratch file `handoff/_append_test.md` (created by the append test in CP-004; it could not be moved to `.trash/`, which does not exist yet).
-2. Run the demo task in PLAN-002 across two separate sessions, using these handoff files to resume. Start with session A (first half).
-3. Save the tool-call transcript of the demo in `handoff/transcripts/`.
+1. Commit the uncommitted handoff changes and `notes/audit-session-a.md` (check `git status` first).
+2. PLAN-003: write the report (stack, tool design choices, security tradeoffs) and the README handoff section.
+3. Save the tool-call transcript of session A if it is available; otherwise note in PLAN-002 that it was not saved.
 4. Run `python test_tools.py` and record the result in CHECKPOINTS.md.
-5. Write the report and README handoff section (PLAN-003).
-6. Decide whether to merge `handoff-protocol` into `main` once the demo is done.
+5. Decide whether to merge `handoff-protocol` into `main` once the report is done.
+6. Prepare the 5-minute live demo.
 
 ## Known issues
 
 - No authentication on the public address (see D-006).
-- Test results have not been recorded since the process manager was added (see next step 4).
+- Test results have not been recorded since the process manager was added (next step 4).
 - Claude Desktop's filesystem server timed out once (2 minutes, see CP-002). If it happens again, the tools may be unavailable for that session.
-- The built-in `str_replace` tool cannot use Windows paths in this environment. Use the filesystem `edit_file` tool for handoff log appends.
-- `.trash/` does not exist yet, so `delete_file` may fail until it is created.
+- The built-in `str_replace` tool cannot use Windows paths. In the filesystem environment, use `edit_file` for appends. In the claude.ai connector environment, use the connector's `str_replace`. See the protocol.
+- `delete_file` may fail until `.trash/` is created. The filesystem tools cannot create it; create it manually or accept that deletes fail.
 
 ## Last session
 
-- **Agent:** Claude, session 1
-- **Did:** created the handoff protocol and seeded it from the README, code, and git reflog; corrected earlier wrong claims; user committed the files (CP-003); tested the append method and corrected the protocol (CP-004).
-- **Resume from:** CP-004 in CHECKPOINTS.md, then PLAN-002 step 2.
+- **Agent:** Claude, session 3
+- **Did:** verified session B's audit result; saved the transcript; recorded PLAN-002 complete; recorded protocol findings (CP-009); updated this file with the protocol fixes.
+- **Resume from:** CP-009 in CHECKPOINTS.md, then PLAN-003.
 
 ---
 
@@ -94,12 +95,15 @@ Four files in `handoff/` keep work continuous between sessions and agents:
 | `CHECKPOINTS.md` | Snapshots to resume from | Append only |
 | `DECISIONS.md` | Why choices were made | Append only (change status, never delete) |
 
+Supporting folders: `handoff/transcripts/` holds saved tool-call transcripts.
+
 ## At the start of a session
 
 1. Read this file.
 2. Read the latest entries of `CHECKPOINTS.md` and `PLAN_LOG.md`. Use `read_file` with `tail` or `head` to skip old entries.
 3. Check `DECISIONS.md` before changing anything that has a recorded decision.
-4. Run `git status` (or ask the user to) to see uncommitted changes.
+4. Check `git status` (or ask the user to) to see uncommitted changes.
+5. Check which write tools you have (see "Write tools by environment" below). If the one you need is missing, stop and tell the user before using any other tool.
 
 ## During a session
 
@@ -113,15 +117,22 @@ Four files in `handoff/` keep work continuous between sessions and agents:
 2. Update the plan status in `PLAN_LOG.md`.
 3. Add a final checkpoint with a clear **Resume from** note.
 
+## Write tools by environment
+
+| Environment | Append to logs | Edit existing file | Create folder |
+|---|---|---|---|
+| Filesystem server (Claude Desktop) | `edit_file`, `path` = full Windows path | `edit_file` | `create_directory` |
+| claude.ai connector "Lazaro's MCP" | connector `str_replace` on the marker line | connector `str_replace` | none; ask the user |
+
+If the write tool you need is not in your tool list, do not substitute a different tool silently. Tell the user which tool is missing and wait for a decision.
+
 ## How to append to a log file
 
-Each log file ends with the line `<!-- APPEND NEW ENTRIES ABOVE THIS LINE -->`. Append with the filesystem tool `edit_file` (not the built-in `str_replace`, which does not accept Windows paths in this environment):
+Each log file ends with the line `<!-- APPEND NEW ENTRIES ABOVE THIS LINE -->`. Use the append tool for your environment (see the table above). Set the edit so that `oldText` is the exact marker line, and `newText` is your new entry, a blank line, then the same marker line again. The marker appears once per file, so the match is unique. Check the result shows the entry above the marker. Never rewrite a whole log file to add an entry.
 
-- `path`: the full Windows path of the log file
-- `edits`: one edit with `oldText` set to the exact marker line, and `newText` set to your new entry, a blank line, then the same marker line again
-- Set `dryRun` to `true` first if you want to preview the diff
+## Missing folders
 
-The marker appears once per file, so the match is unique. Check the diff output shows the entry above the marker. If `edit_file` is not available, stop and tell the user rather than rewriting the whole log.
+If a folder the protocol names (for example `handoff/transcripts/`) does not exist and your tools cannot create it, stop and ask the user to create it. Do not save the file somewhere else without asking. If the user prefers, the transcript can go in `notes/`, and the checkpoint should say where it was saved.
 
 ## Rules
 

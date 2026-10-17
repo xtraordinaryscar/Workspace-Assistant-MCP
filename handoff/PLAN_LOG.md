@@ -43,4 +43,24 @@ Append only. Newest entries go above the marker line. Each entry: ID, date, agen
 - **Not done:** no audit was run and no notes were written. Running the same audit with the filesystem tools would not satisfy requirement 05.
 - **Next:** open the workspace-assistant connector in claude.ai (Settings > Connectors) and confirm it is enabled for this chat; make sure the server and ngrok tunnel are running (`start-all.bat`, then `check-status.bat`). Start a new chat and use the connector's tools for session A.
 
+## PLAN-002 update: session A done (2026-10-17, Claude, session 2)
+- **Status:** Session A complete. Counts toward requirement 05.
+- **Connector:** the user's custom MCP connector, named "Lazaro's MCP" in claude.ai. It is the user's own server (the user confirmed this); the name differs from `workspace-assistant` by the user's choice. The URL was not checked by the agent.
+- **Result:** `notes/audit-session-a.md` written; checkpoint CP-006. Findings: 17 project files, 16 marker hits (none are open work items), 1 intentional broken link (`nope.md` in the README demo prompt).
+- **Next:** session B, in a new chat, using only the handoff files and `notes/audit-session-a.md`. Use the same connector.
+
+## PLAN-002 update: step 5 done (2026-10-17, Claude, session 3)
+- **Status:** Complete. Audit finished in session B.
+- **Connector:** "Lazaro's MCP", same as session A.
+- **Result:** Re-ran the TODO scan (19 hits in 13 files; the increase is the audit note itself) and the README broken-link check (1 intentional break, `nope.md`). No open work items. Recorded in `notes/audit-session-a.md`, section 6.
+- **Not verified:** `test_tools.py` not run; `logs/` not reviewed. Transcript not yet saved to `handoff/transcripts/`.
+- **Next:** save the tool-call transcript (PLAN-002 step 3), then PLAN-003.
+
+## PLAN-002 update: complete (2026-10-17, Claude, session 3)
+- **Status:** Complete. Session B resumed from the handoff files and finished the audit without asking the user for anything the files contain.
+- **Step 3 (transcript):** saved to `handoff/transcripts/plan-002-session-b-tool-calls.md`. The folder was created in session 3 because it did not exist.
+- **Findings:** recorded in CP-009 (protocol deviation: `edit_file` not available in session B, `str_replace` used without asking; gap: no rule for a missing transcript folder).
+- **Next:** PLAN-003 (report and README handoff section), after the protocol fixes in CP-009.
+
 <!-- APPEND NEW ENTRIES ABOVE THIS LINE -->
+
