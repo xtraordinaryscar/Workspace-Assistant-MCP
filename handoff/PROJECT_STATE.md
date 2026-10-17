@@ -5,7 +5,7 @@
 **Project:** workspace-assistant, an MCP file-server connector (Python, `mcp` SDK, streamable HTTP)
 **Root:** `mcp-server/` (the sandbox; the tools cannot reach anything outside it)
 **Last updated:** 2026-10-17 by Claude (session 1)
-**Branch and commit at last update:** `handoff-protocol` @ 8562201 (same commit as `main`). The handoff files are not yet committed.
+**Branch and commit at last update:** `handoff-protocol` @ 6c14a42 ("added handoff files"), one commit ahead of `main` @ 8562201. Handoff files are committed; the protocol's append method was corrected after the commit (see CP-004, not yet committed).
 
 ## Current status
 
@@ -15,14 +15,16 @@
 - Server on `127.0.0.1:8000`, public HTTPS through an ngrok fixed domain (set at the top of `run-tunnel.bat`)
 - Process management: `run-server.bat` and `run-tunnel.bat` restart on crash, `start-all.bat` launches both, `check-status.bat` checks both (HTTP 406 from each address means it is up)
 - Connected to Claude Desktop through the public address; `notes/test-note.md` shows a successful write from a real client
+- Handoff append method tested and working with the filesystem `edit_file` tool (CP-004)
 
-**Done in session 1**
-- Created `handoff/` with this file, `PLAN_LOG.md`, `CHECKPOINTS.md`, and `DECISIONS.md`
+**Done**
+- Handoff protocol created in `handoff/` and committed (CP-003)
+- Append method verified (CP-004)
 
 **Not done (requirements for the midterm brief)**
 - Multi-step demo task across 2 or more sessions with a real MCP client (PLAN-002)
 - Tool-call transcript of the demo task
-- Handoff protocol verified in use: the files exist, but no session has used them yet
+- Handoff protocol verified in use: the files exist, but no session has resumed from them yet
 - Short report on stack, tool design choices, and security tradeoffs (PLAN-003)
 - 5-minute live demo
 - README section describing the handoff protocol
@@ -54,25 +56,30 @@
 4. Commit "added Process Manager" on branch `process-manager`.
 5. Branch `process-manager` was merged into `main` (the reflog shows `main` fast-forwarded to 8562201).
 6. `handoff-protocol` branch created from `main`, then fast-forwarded to 8562201 with `pull origin main`.
+7. Commit "added handoff files" on `handoff-protocol` (6c14a42), made by the user.
 
 ## Next steps (in order)
 
-1. Check `git status`. If the `handoff/` files are uncommitted, commit them on `handoff-protocol`.
-2. Run the demo task in PLAN-002 across two separate sessions, using these handoff files to resume.
+1. Delete the scratch file `handoff/_append_test.md` (created by the append test in CP-004; it could not be moved to `.trash/`, which does not exist yet).
+2. Run the demo task in PLAN-002 across two separate sessions, using these handoff files to resume. Start with session A (first half).
 3. Save the tool-call transcript of the demo in `handoff/transcripts/`.
-4. Write the report and the README handoff section (PLAN-003).
+4. Run `python test_tools.py` and record the result in CHECKPOINTS.md.
+5. Write the report and README handoff section (PLAN-003).
+6. Decide whether to merge `handoff-protocol` into `main` once the demo is done.
 
 ## Known issues
 
 - No authentication on the public address (see D-006).
-- Test results have not been recorded since the process manager was added. Run `python test_tools.py` and record the result in CHECKPOINTS.md.
+- Test results have not been recorded since the process manager was added (see next step 4).
 - Claude Desktop's filesystem server timed out once (2 minutes, see CP-002). If it happens again, the tools may be unavailable for that session.
+- The built-in `str_replace` tool cannot use Windows paths in this environment. Use the filesystem `edit_file` tool for handoff log appends.
+- `.trash/` does not exist yet, so `delete_file` may fail until it is created.
 
 ## Last session
 
 - **Agent:** Claude, session 1
-- **Did:** created the handoff protocol and seeded it from the README, code, and git reflog; corrected earlier wrong claims (the branch was not behind main; no build dates were verified)
-- **Resume from:** CP-002 in CHECKPOINTS.md
+- **Did:** created the handoff protocol and seeded it from the README, code, and git reflog; corrected earlier wrong claims; user committed the files (CP-003); tested the append method and corrected the protocol (CP-004).
+- **Resume from:** CP-004 in CHECKPOINTS.md, then PLAN-002 step 2.
 
 ---
 
@@ -82,7 +89,7 @@ Four files in `handoff/` keep work continuous between sessions and agents:
 
 | File | Purpose | How it changes |
 |---|---|---|
-| `PROJECT_STATE.md` | Current status, constraints, next steps | Edit sections in place |
+| `PROJECT_STATE.md` | Current status, constraints, next steps | Rewrite the sections you changed |
 | `PLAN_LOG.md` | What was planned and what happened | Append only |
 | `CHECKPOINTS.md` | Snapshots to resume from | Append only |
 | `DECISIONS.md` | Why choices were made | Append only (change status, never delete) |
@@ -108,7 +115,13 @@ Four files in `handoff/` keep work continuous between sessions and agents:
 
 ## How to append to a log file
 
-Each log file ends with the line `<!-- APPEND NEW ENTRIES ABOVE THIS LINE -->`. The `write_note` tool cannot overwrite files, so append with `str_replace`: set `old_str` to that exact marker line, and set `new_str` to your new entry, a blank line, then the same marker line again. The marker appears once per file, so the match is unique.
+Each log file ends with the line `<!-- APPEND NEW ENTRIES ABOVE THIS LINE -->`. Append with the filesystem tool `edit_file` (not the built-in `str_replace`, which does not accept Windows paths in this environment):
+
+- `path`: the full Windows path of the log file
+- `edits`: one edit with `oldText` set to the exact marker line, and `newText` set to your new entry, a blank line, then the same marker line again
+- Set `dryRun` to `true` first if you want to preview the diff
+
+The marker appears once per file, so the match is unique. Check the diff output shows the entry above the marker. If `edit_file` is not available, stop and tell the user rather than rewriting the whole log.
 
 ## Rules
 
