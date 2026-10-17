@@ -145,5 +145,12 @@ Append only. Newest entries go above the marker line. Each checkpoint: ID, date,
 - **Not verified:** the demo itself (not yet run); `git status` after the PROJECT_STATE edit.
 - **Resume from:** the live demo. After it, add a final checkpoint recording the outcome.
 
+## CP-014: report wording updated before submission
+- **Date:** 2026-10-17
+- **Agent:** Claude, session 4
+- **State:** the documentation PDF was revised: the process-management paragraph now says the watchdogs restart a process five seconds after it exits and that Task Scheduler starts them at login; the test paragraph now states that the first attempt was blocked and not counted, and that the saved second-session transcript is a record of tool calls, not a complete raw log. The PDF is submitted separately; no repo files changed.
+- **Not done in this checkpoint:** the raw transcript (must be copied from claude.ai by the user); the live demo; the ngrok domain change (user decision).
+- **Resume from:** the live demo.
+
 <!-- APPEND NEW ENTRIES ABOVE THIS LINE -->
 
